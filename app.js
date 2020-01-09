@@ -1,58 +1,91 @@
-// require all the modules
-const express     =  require('express'),
-      bodyParser  =  require('body-parser'),   
-      mongoose    =  require('mongoose'),
-      app         =  express();
+var express     =   require('express'),
+    mongoose    =   require('mongoose'),
+    bodyParser  =   require('body-parser');
 
+var app=express();
 
-
-// tell the app to use body parser
-app.use(bodyParser.urlencoded({extended:true}));
-
-
-// configure mongoose
-mongoose.connect("mongodb://localhost:27017/restful_blog_app", { useNewUrlParser: true,useUnifiedTopology: true });
-
-//set the view engine
 app.set("view engine","ejs");
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(express.static("public"));
 
-// set up the static folder for stylesheet
-app.use(express.static('public'));
 
-// create the blog schema
-const blogSchema= new mongoose.Schema({
-    title:String,
-    image:String,
-    body: String,
-    created: {type:Date, default:Date.now }
+
+mongoose.connect("mongodb://localhost/restful_blog_app",{
+    useNewUrlParser:true,
+    useUnifiedTopology: true 
 });
 
-var Blog = mongoose.model("Blog",blogSchema);
+
+const blogSchema = new mongoose.Schema({
+
+    title: String,
+    image : String,
+    body : String,
+    created : {
+          type: Date,
+        default : Date.now()
+    }
+});
+
+const Blog =mongoose.model("Blog",blogSchema);
 
 
-//Restful routes
-
+//create the home route to the index route
 app.get('/',function(req,res){
     res.redirect('/blogs');
-});
+})
 
-
+// create the INDEX route
 app.get('/blogs',function(req,res){
-    
+
     Blog.find({},function(err,blogs){
 
-        if(err){
+        if(!err) res.render("index",{blogs : blogs});
+        else {
             console.log(err);
-        } else{ 
-            res.render("index",{blogs: blogs});
         }
     });
+
+});
+
+//create the NEW Blog route
+app.get('/blog/new',function(req,res){
+    res.render("new");
+});
+
+// set the CREATE route here
+app.post('/blogs',function(req,res){
+
+    // create the blog
+    Blog.create(req.body.blog,function(err,newBlog){
+
+        if(err) res.render('new');
+    
+        //redirect to the index
+        else res.redirect('/');
+    });
+
+});
+
+// SHOW route
+app.get('/blogs/:id',function(req,res){
+
+    Blog.findById(req.params.id,function(err,foundBlog){
+
+        if(err){
+            res.redirect("/blogs");
+        } else{
+
+            res.render("show",{blog : foundBlog});
+        }
+    })
+
 });
 
 
 
 
-//create the server
+
 app.listen(3000,function(){
-    console.log("Blog Post listening on port 3000");
+    console.log("Blog Server Started");
 });
